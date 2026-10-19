@@ -2,3 +2,5 @@ keras>=3.0
 tensorflow>=2.16
 mecab-python3
 unidic-lite
+matplotlib
+transformers

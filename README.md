@@ -1,12 +1,20 @@
 # Tokenization: French vs Japanese
 
-Two small scripts that run a corpus through `keras.layers.TextVectorization`,
-one in French, one in Japanese, to see what splitting into words gives.
+Small scripts that run a corpus through `keras.layers.TextVectorization`,
+one in French, one in Japanese, to see what splitting into words gives. A last
+one uses MeCab to cut the Japanese text into actual words.
+
+```
+french/textvectorization.py     default split on French
+japanese/textvectorization.py   default split and character split on Japanese
+japanese/mecab.py               MeCab, then TextVectorization
+```
 
 ```sh
 pip install -r requirements.txt
-python french.py
-python japanese.py
+python french/textvectorization.py
+python japanese/textvectorization.py
+python japanese/mecab.py
 ```
 
 ## French
@@ -51,13 +59,52 @@ No more `[UNK]`, but the notion of a word is gone: `テキスト` is split into 
 characters. Note also that `、` stays in the vocabulary: the default
 punctuation stripping only covers ASCII punctuation.
 
+## Japanese with MeCab
+
+MeCab is a morphological analyzer: it knows a Japanese dictionary (here
+UniDic, through `unidic-lite`) and cuts the text into words, with their part of
+speech:
+
+```
+私	代名詞      pronoun
+は	助詞        particle
+書く	動詞        verb
+こと	名詞        noun
+が	助詞        particle
+できる	動詞        verb
+猫	名詞        noun
+です	助動詞      auxiliary verb
+```
+
+With the `-Owakati` option, MeCab only outputs the words separated by spaces.
+That text can then go through `TextVectorization` with the default settings,
+exactly like French:
+
+```
+Vocabulary : ['', '[UNK]', 'は', '私', '我', 'テキスト', 'です', 'あり', '猫', '書く', '思う', '別', '作家', 'ん', 'ゆえ', 'ませ', 'の', 'に', 'できる', 'で', 'こと', 'が', '、']
+Sentence   : 私 は 書く こと が できる 猫 です
+Encoded    : [3, 2, 9, 20, 21, 18, 8, 6]
+Decoded    : ['私', 'は', '書く', 'こと', 'が', 'できる', '猫', 'です']
+```
+
+No `[UNK]`, and the tokens are words again: `テキスト` stays in one piece,
+`書く` (to write) and `猫` (cat) are recognized as words.
+
 ## Summary
 
-|                      | French          | Japanese              |
-|----------------------|-----------------|-----------------------|
-| Word separator       | space           | none                  |
-| Default split gives  | words           | whole sentences       |
-| Simple workaround    | —               | split by character    |
+Same test sentence, `私は書くことができる猫です`:
 
-To get actual words in Japanese, you need a morphological analyzer (MeCab,
-Sudachi, Janome…) or a subword tokenizer (SentencePiece).
+| Method                    | Tokens | `[UNK]` | Tokens are…        |
+|---------------------------|--------|---------|--------------------|
+| Whitespace split          | 1      | 1       | whole sentences    |
+| Character split           | 13     | 0       | single characters  |
+| MeCab + whitespace split  | 8      | 0       | words              |
+
+|                      | French          | Japanese                      |
+|----------------------|-----------------|-------------------------------|
+| Word separator       | space           | none                          |
+| Default split gives  | words           | whole sentences               |
+| To get words         | nothing to do   | a morphological analyzer      |
+
+MeCab is not the only option: Sudachi and Janome do the same job, and a subword
+tokenizer like SentencePiece avoids the dictionary altogether.
